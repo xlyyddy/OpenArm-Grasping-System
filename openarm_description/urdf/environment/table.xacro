@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="table">
+
+  <xacro:macro name="table"
+    params="parent_link:='world'
+            xyz:='0.5 0 0.375'
+            rpy:='0 0 0'
+            length:=1.2
+            width:=0.8
+            height:=0.75
+            tabletop_thickness:=0.06
+            leg_thickness:=0.05
+            leg_inset:=0.05">
+
+    <!-- 桌子链接定义 -->
+    <link name="table_link">
+      <visual>
+        <geometry>
+          <box size="${length} ${width} ${height}"/>
+        </geometry>
+        <material name="table_material">
+          <color rgba="0.6 0.4 0.2 1"/>
+        </material>
+      </visual>
+      <collision>
+        <geometry>
+          <box size="${length} ${width} ${height}"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="20.0"/>
+        <inertia ixx="1.0" ixy="0" ixz="0" iyy="1.0" iyz="0" izz="1.0"/>
+      </inertial>
+    </link>
+
+    <!-- 将桌子连接到父链接 -->
+    <joint name="table_joint" type="fixed">
+      <parent link="${parent_link}"/>
+      <child link="table_link"/>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+    </joint>
+
+  </xacro:macro>
+
+</robot>

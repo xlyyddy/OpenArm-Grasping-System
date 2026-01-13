@@ -1,0 +1,129 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+<!-- 
+  双机械臂ROS2控制配置宏定义
+  参数说明：
+  - arm_type: 机械臂型号（如v10）
+  - left_can_interface: 左臂CAN总线接口（默认^|can1，^|表示默认值）
+  - right_can_interface: 右臂CAN总线接口（默认^|can0）
+  - use_fake_hardware: 是否使用虚拟硬件（默认^|false）
+  - fake_sensor_commands: 虚拟传感器命令使能（默认^|false）
+  - hand: 是否包含手爪（默认^|false）
+  - left_arm_prefix: 左臂关节前缀（默认^|left_）
+  - right_arm_prefix: 右臂关节前缀（默认^|right_）
+  - can_fd: 是否启用CAN FD（默认^|true）
+-->
+<xacro:macro name="openarm_bimanual_ros2_control"
+         params="arm_type
+             left_can_interface:=^|can1
+             right_can_interface:=^|can0
+             use_fake_hardware:=^|false
+             fake_sensor_commands:=^|false
+             hand:=^|false
+             left_arm_prefix:=^|left_
+             right_arm_prefix:=^|right_
+             can_fd:=^|true">
+
+    <!-- Left Arm Hardware Interface -->
+    <!-- 左臂硬件接口配置 -->
+    <ros2_control name="openarm_left_hardware_interface" type="system">
+        <hardware>
+          <!-- 配置机械臂型号参数 -->
+          <param name="arm_type">${arm_type}</param>
+          <!-- 如果使用虚拟硬件，加载虚拟系统插件 -->
+          <xacro:if value="${use_fake_hardware}">
+            <plugin>fake_components/GenericSystem</plugin>
+            <param name="fake_sensor_commands">${fake_sensor_commands}</param>
+            <param name="state_following_offset">0.0</param> <!-- 状态跟踪偏移量 -->
+          </xacro:if>
+
+          <!-- 如果使用真实硬件，加载OpenArm硬件插件 -->
+          <xacro:unless value="${use_fake_hardware}">
+            <plugin>openarm_hardware/OpenArm_v10HW</plugin>
+            <param name="can_interface">${left_can_interface}</param><!-- 左臂CAN接口 -->
+            <param name="arm_prefix">${left_arm_prefix}</param><!-- 左臂前缀 -->
+            <param name="hand">${hand}</param>  <!-- 是否包含手爪 -->
+            <param name="can_fd">${can_fd}</param>  <!-- 是否启用CAN FD -->
+          </xacro:unless>
+        </hardware>
+
+      <!-- 定义关节配置子宏，用于简化多个关节的重复配置 -->
+      <!-- 参数：joint_name-关节名称，initial_position-初始位置 -->
+      <xacro:macro name="configure_joint" params="joint_name initial_position">
+        <joint name="${joint_name}">
+          <!-- 关节控制接口：支持位置、速度、力控模式 -->
+          <command_interface name="position"/>
+          <command_interface name="velocity"/>
+          <command_interface name="effort"/>
+
+          <!-- 关节状态接口：位置、速度、力反馈 -->
+          <state_interface name="position">
+            <param name="initial_value">${initial_position}</param><!-- 初始位置参数 -->
+          </state_interface>
+
+          <state_interface name="velocity">
+            <param name="initial_value">0.0</param><!-- 初始速度为0 -->
+          </state_interface>
+
+          <state_interface name="effort">
+            <param name="initial_value">0.0</param><!-- 初始力为0 -->
+          </state_interface>
+        </joint>
+      </xacro:macro>
+
+      <!-- 配置左臂7个关节（带前缀区分）及初始位置 -->
+      <xacro:configure_joint joint_name="openarm_${left_arm_prefix}joint1" initial_position="-1.0"/>
+      <xacro:configure_joint joint_name="openarm_${left_arm_prefix}joint2" initial_position="0.0"/>
+      <xacro:configure_joint joint_name="openarm_${left_arm_prefix}joint3" initial_position="0.0"/>
+      <xacro:configure_joint joint_name="openarm_${left_arm_prefix}joint4" initial_position="0.7"/>
+      <xacro:configure_joint joint_name="openarm_${left_arm_prefix}joint5" initial_position="0.0"/>
+      <xacro:configure_joint joint_name="openarm_${left_arm_prefix}joint6" initial_position="0.0"/>
+      <xacro:configure_joint joint_name="openarm_${left_arm_prefix}joint7" initial_position="0.0"/>
+
+      <!-- 如果包含手爪，配置左臂手爪关节 -->
+      <xacro:if value="${hand}">
+        <xacro:configure_joint joint_name="openarm_${left_arm_prefix}finger_joint1" initial_position="0.0" />
+      </xacro:if>
+    </ros2_control>
+
+    <!-- Right Arm Hardware Interface -->
+    <!-- 右臂硬件接口配置（结构与左臂对称） -->
+    <ros2_control name="openarm_right_hardware_interface" type="system">
+        <hardware>
+          <param name="arm_type">${arm_type}</param>
+
+          <!-- 虚拟硬件配置 -->
+          <xacro:if value="${use_fake_hardware}">
+            <plugin>fake_components/GenericSystem</plugin>
+            <param name="fake_sensor_commands">${fake_sensor_commands}</param>
+            <param name="state_following_offset">0.0</param>
+          </xacro:if>
+
+          <!-- 真实硬件配置 -->
+          <xacro:unless value="${use_fake_hardware}">
+            <plugin>openarm_hardware/OpenArm_v10HW</plugin>
+            <param name="can_interface">${right_can_interface}</param>
+            <param name="arm_prefix">${right_arm_prefix}</param>
+            <param name="hand">${hand}</param>
+            <param name="can_fd">${can_fd}</param>
+          </xacro:unless>
+        </hardware>
+
+      <!-- 配置右臂7个关节及初始位置（与左臂对称） -->
+      <xacro:configure_joint joint_name="openarm_${right_arm_prefix}joint1" initial_position="1.0"/>
+      <xacro:configure_joint joint_name="openarm_${right_arm_prefix}joint2" initial_position="0.0"/>
+      <xacro:configure_joint joint_name="openarm_${right_arm_prefix}joint3" initial_position="0.0"/>
+      <xacro:configure_joint joint_name="openarm_${right_arm_prefix}joint4" initial_position="0.7"/>
+      <xacro:configure_joint joint_name="openarm_${right_arm_prefix}joint5" initial_position="0.0"/>
+      <xacro:configure_joint joint_name="openarm_${right_arm_prefix}joint6" initial_position="0.0"/>
+      <xacro:configure_joint joint_name="openarm_${right_arm_prefix}joint7" initial_position="0.0"/>
+
+      <!-- 如果包含手爪，配置右臂手爪关节 -->
+      <xacro:if value="${hand}">
+        <xacro:configure_joint joint_name="openarm_${right_arm_prefix}finger_joint1" initial_position="0.0" />
+      </xacro:if>
+    </ros2_control>
+
+  </xacro:macro>
+
+</robot>

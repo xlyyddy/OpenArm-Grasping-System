@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="openarm">
+
+    <xacro:include filename="$(find openarm_description)/urdf/robot/openarm.bimanual.urdf" />
+
+    <!-- <xacro:include filename="$(find openarm_description)/urdf/openarm.ros2_control.xacro" /> -->
+
+    <xacro:include filename="$(find openarm_description)/urdf/environment/environment.xacro"/>
+
+</robot>

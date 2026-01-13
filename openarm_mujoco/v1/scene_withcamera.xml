@@ -1,0 +1,33 @@
+<mujoco model="openarm_bimanual scene">
+  <include file="openarm_bimanual.xml"/>
+
+  <statistic center="0 0 0.43" extent=".85" meansize="0.05"/>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="160" elevation="-10"/>
+    <quality shadowsize="8192"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3"
+      markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
+    <!-- RGB相机：用于获取彩色图像
+         注意：MuJoCo的可视化器中相机视图默认显示RGB图像 -->
+    <camera name="rgb_camera" pos="0.3 0 0.7" euler="0 0 0" fovy="60"/>
+    <!-- 深度相机：用于获取深度图像
+         注意：MuJoCo的可视化器中所有相机视图都显示RGB图像（这是可视化器的限制）
+         XML文件无法配置相机视图显示深度图，因为XML只定义相机物理参数，不控制渲染模式
+         要查看深度图，必须使用自定义代码（如 depth_camera_example.py）从深度缓冲区读取
+         虽然这个相机命名为"depth_camera"，但在MuJoCo可视化器中查看时仍会显示RGB图像 -->
+    <camera name="depth_camera" pos="0.75 0 1" euler="0 0 0" fovy="60" />
+  </worldbody>
+</mujoco>

@@ -1,0 +1,25 @@
+moveit_setup_assistant_config:
+  urdf:
+    package: openarm_description
+    relative_path: urdf/robot/openarm.bimanual.urdf
+  srdf:
+    relative_path: config/openarm.srdf
+  package_settings:
+    author_name: ldp
+    author_email: ldepn@foxmail.com
+    generated_timestamp: 1767157743
+  control_xacro:
+    command:
+      - position
+    state:
+      - position
+      - velocity
+  modified_urdf:
+    xacros:
+      - control_xacro
+  control_xacro:
+    command:
+      - position
+    state:
+      - position
+      - velocity

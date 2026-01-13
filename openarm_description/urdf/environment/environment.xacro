@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="environment">
+
+  <xacro:include filename="$(find openarm_description)/urdf/environment/table.xacro" />
+  <xacro:include filename="$(find openarm_description)/urdf/environment/objects.xacro" />
+
+  <xacro:arg name="use_table" default="true" />
+  <xacro:arg name="table_x" default="0.4" />
+  <xacro:arg name="table_y" default="0" />
+  <xacro:arg name="table_length" default="0.4" />
+  <xacro:arg name="table_width" default="0.3" />
+  <xacro:arg name="table_height" default="0.3" />
+  <xacro:arg name="use_objects" default="true" />
+  <xacro:arg name="enable_apple" default="true" />
+  <xacro:arg name="enable_banana" default="true" />
+  <!-- 苹果在桌子左侧（Y负方向），香蕉在桌子右侧（Y正方向） -->
+  <!-- Z坐标计算：桌面在table_link坐标系中z=table_height/2=0.15 -->
+  <!-- 苹果mesh向下偏移0.363m，所以物体中心z=0.15+0.363=0.513 -->
+  <!-- 香蕉mesh向下偏移0.171m，所以物体中心z=0.15+0.171=0.321 -->
+  <!-- 香蕉位置调整：考虑mesh偏移(0.099, -0.041, -0.171)和旋转，确保完全在桌面范围内 -->
+  <!-- link位置(-0.1, 0.02, 0.321) -> mesh中心(0.099-0.1, 0.02-0.041, 0.321-0.171) = (-0.001, -0.021, 0.15) -->
+  <xacro:arg name="apple_xyz" default="0 -0.12 0.513" />
+  <xacro:arg name="banana_xyz" default="-0.1 0.02 0.321" />
+  <xacro:arg name="use_local_mesh" default="true" />
+
+  <!-- 桌子模型 -->
+  <!-- 自动计算z坐标，使桌子底部接触地面（z=0） -->
+  <!-- 因为桌子是中心对齐的，z坐标应该是 height/2 -->
+  <xacro:if value="$(arg use_table)">
+    <xacro:property name="table_height_val" value="$(arg table_height)" />
+    <xacro:table
+      parent_link="world"
+      xyz="$(arg table_x) $(arg table_y) ${float(table_height_val) / 2.0}"
+      rpy="0 0 0"
+      length="$(arg table_length)"
+      width="$(arg table_width)"
+      height="$(arg table_height)"
+      tabletop_thickness="0.06"
+      leg_thickness="0.05"
+      leg_inset="0.05"/>
+  </xacro:if>
+
+  <!-- 物体模型 - 使用YCB数据集模型（苹果、香蕉等） -->
+  <xacro:if value="$(arg use_objects)">
+    <!-- 修复逻辑：根据是否使用桌子，动态设置物体的父链接 -->
+    <xacro:if value="$(arg use_table)">
+      <!-- 使用桌子时，父链接为 table_link -->
+      <xacro:objects_group
+        parent_link="table_link"
+        enable_apple="$(arg enable_apple)"
+        enable_banana="$(arg enable_banana)"
+        apple_xyz="$(arg apple_xyz)"
+        banana_xyz="$(arg banana_xyz)"
+        use_local_mesh="$(arg use_local_mesh)"/>
+    </xacro:if>
+    <xacro:unless value="$(arg use_table)">
+      <!-- 不使用桌子时，父链接为 world，并调整物体位置（Z轴增加高度到桌面水平） -->
+      <xacro:property name="adjusted_apple_xyz" value="$(arg apple_xyz)" />
+      <xacro:property name="adjusted_banana_xyz" value="$(arg banana_xyz)" />
+      
+      <!-- 如果提供的坐标是相对于桌面的，需要调整Z坐标 -->
+      <xacro:if value="${adjusted_apple_xyz.split()[2] &lt; 0.5}">
+        <xacro:property name="adjusted_apple_xyz" value="${adjusted_apple_xyz.split()[0]} ${adjusted_apple_xyz.split()[1]} 0.45" />
+      </xacro:if>
+      <xacro:if value="${adjusted_banana_xyz.split()[2] &lt; 0.5}">
+        <xacro:property name="adjusted_banana_xyz" value="${adjusted_banana_xyz.split()[0]} ${adjusted_banana_xyz.split()[1]} 0.45" />
+      </xacro:if>
+      
+      <xacro:objects_group
+        parent_link="world"
+        enable_apple="$(arg enable_apple)"
+        enable_banana="$(arg enable_banana)"
+        apple_xyz="${adjusted_apple_xyz}"
+        banana_xyz="${adjusted_banana_xyz}"
+        use_local_mesh="$(arg use_local_mesh)"/>
+    </xacro:unless>
+  </xacro:if>
+
+</robot>
